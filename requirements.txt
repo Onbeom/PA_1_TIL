@@ -1,0 +1,12 @@
+# Lv.1 실습 환경
+# pip install -r requirements.txt
+numpy
+scipy
+matplotlib
+pytest
+jupyterlab
+ipykernel
+rotations
+
+# 선택 — 대화형 3D 플롯 (%matplotlib widget)
+ipympl
