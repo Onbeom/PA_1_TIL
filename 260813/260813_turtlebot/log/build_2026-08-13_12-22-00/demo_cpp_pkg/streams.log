@@ -1,0 +1,5 @@
+[0.009s] Invoking command in '/home/pa4/turtlebot3_ws/src/260813/build/demo_cpp_pkg': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/pa4/turtlebot3_ws/install/turtlebot3_teleop:/home/pa4/turtlebot3_ws/install/turtlebot3_example:/opt/ros/humble /usr/bin/cmake --build /home/pa4/turtlebot3_ws/src/260813/build/demo_cpp_pkg -- -j24 -l24
+[0.021s] [0mCMake Error: The source directory "/home/pa4/turtlebot3_ws/src/260813/src/demo_cpp_pkg" does not exist.
+[0.021s] Specify --help for usage, or press the help button on the CMake GUI.[0m
+[0.021s] gmake: *** [Makefile:267: cmake_check_build_system] 오류 1
+[0.117s] Invoked command in '/home/pa4/turtlebot3_ws/src/260813/build/demo_cpp_pkg' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/pa4/turtlebot3_ws/install/turtlebot3_teleop:/home/pa4/turtlebot3_ws/install/turtlebot3_example:/opt/ros/humble /usr/bin/cmake --build /home/pa4/turtlebot3_ws/src/260813/build/demo_cpp_pkg -- -j24 -l24

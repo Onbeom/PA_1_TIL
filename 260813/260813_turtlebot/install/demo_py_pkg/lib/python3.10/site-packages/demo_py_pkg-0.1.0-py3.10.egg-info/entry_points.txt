@@ -1,0 +1,3 @@
+[console_scripts]
+talker = demo_py_pkg.talker:main
+

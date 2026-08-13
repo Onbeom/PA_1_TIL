@@ -1,0 +1,24 @@
+[0.415s] Invoking command in '/home/pa4/turtlebot3_ws/src/260813/src/demo_py_pkg': PYTHONPATH=/home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/demo_py_pkg build --build-base /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/build install --record /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/install.log --install-scripts $base/lib/demo_py_pkg --single-version-externally-managed install_data
+[0.559s] running egg_info
+[0.560s] writing ../../build/demo_py_pkg/demo_py_pkg.egg-info/PKG-INFO
+[0.560s] writing dependency_links to ../../build/demo_py_pkg/demo_py_pkg.egg-info/dependency_links.txt
+[0.560s] writing entry points to ../../build/demo_py_pkg/demo_py_pkg.egg-info/entry_points.txt
+[0.560s] writing requirements to ../../build/demo_py_pkg/demo_py_pkg.egg-info/requires.txt
+[0.560s] writing top-level names to ../../build/demo_py_pkg/demo_py_pkg.egg-info/top_level.txt
+[0.561s] reading manifest file '../../build/demo_py_pkg/demo_py_pkg.egg-info/SOURCES.txt'
+[0.562s] writing manifest file '../../build/demo_py_pkg/demo_py_pkg.egg-info/SOURCES.txt'
+[0.562s] running build
+[0.562s] running build_py
+[0.562s] copying demo_py_pkg/talker.py -> /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/build/lib/demo_py_pkg
+[0.562s] running install
+[0.562s] running install_lib
+[0.563s] copying /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/build/lib/demo_py_pkg/talker.py -> /home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages/demo_py_pkg
+[0.563s] byte-compiling /home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages/demo_py_pkg/talker.py to talker.cpython-310.pyc
+[0.564s] running install_data
+[0.564s] running install_egg_info
+[0.565s] removing '/home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages/demo_py_pkg-0.1.0-py3.10.egg-info' (and everything under it)
+[0.567s] Copying ../../build/demo_py_pkg/demo_py_pkg.egg-info to /home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages/demo_py_pkg-0.1.0-py3.10.egg-info
+[0.567s] running install_scripts
+[0.583s] Installing talker script to /home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/demo_py_pkg
+[0.583s] writing list of installed files to '/home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/install.log'
+[0.599s] Invoked command in '/home/pa4/turtlebot3_ws/src/260813/src/demo_py_pkg' returned '0': PYTHONPATH=/home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pa4/turtlebot3_ws/src/260813/install/demo_py_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/demo_py_pkg build --build-base /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/build install --record /home/pa4/turtlebot3_ws/src/260813/build/demo_py_pkg/install.log --install-scripts $base/lib/demo_py_pkg --single-version-externally-managed install_data

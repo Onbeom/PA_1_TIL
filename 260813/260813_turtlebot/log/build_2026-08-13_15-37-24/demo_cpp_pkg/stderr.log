@@ -1,0 +1,7 @@
+[01m[K/home/pa4/turtlebot3_ws/src/260813/src/demo_cpp_pkg/src/listener.cpp:14:10:[m[K [01;31m[Kfatal error: [m[Kgeometry_msgs/msg/twist.hpp: 그런 파일이나 디렉터리가 없습니다
+   14 | #include [01;31m[K"geometry_msgs/msg/twist.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/listener.dir/build.make:76: CMakeFiles/listener.dir/src/listener.cpp.o] 오류 1
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/listener.dir/all] 오류 2
+gmake: *** [Makefile:146: all] 오류 2

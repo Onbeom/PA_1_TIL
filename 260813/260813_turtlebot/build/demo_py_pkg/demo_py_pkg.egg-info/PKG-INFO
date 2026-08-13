@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: demo-py-pkg
+Version: 0.1.0
+Summary: Python(rclpy) 노드 예제 - std_msgs/String 퍼블리셔
+Home-page: UNKNOWN
+Maintainer: pa
+Maintainer-email: roboticsmaster@naver.com
+License: Apache-2.0
+Platform: UNKNOWN
+
+UNKNOWN
+
