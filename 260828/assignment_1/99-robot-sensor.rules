@@ -1,0 +1,2 @@
+SUBSYSTEM=="block", KERNEL=="loop6",  SYMLINK+="robot_lidar", MODE="0660", GROUP="dialout"
+SUBSYSTEM=="block", KERNEL=="loop21",  SYMLINK+="robot_imu", MODE="0660", GROUP="dialout"
