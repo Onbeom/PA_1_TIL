@@ -1,0 +1,1 @@
+np.allclose 나 np.isclose난수를 쓰는 모든 곳은 np.random.default_rng(42) 로 시드를 고정
