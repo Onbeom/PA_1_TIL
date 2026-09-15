@@ -1,4 +1,11 @@
 # ADUINO - IDE
+- IDE 설치
+- ```bash
+  sudo usermod -aG dialout $USER
+  newgrp dialout
+  ./arduino-ide
+  ```
+
 
 ## 모터 및 보드 인식
 ```c++
