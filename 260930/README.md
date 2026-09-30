@@ -83,6 +83,7 @@ locale
 ### Environment
 ```shell
 vi ~/.bashrc
+source ~/.bashrc
 ```
 - 자동 source 설정을 확인
 
@@ -157,6 +158,11 @@ docker run --rm hello-world
 docker run --rm --gpus all ubuntu:24.04 bash -lc 'echo "NVIDIA runtime OK"'
 
 sudo isaac-ros init docker
+```
+
+### launch
+```shell
+source /opt/ros/lyrical/setup.bash
 ```
 
 # OpenCV
