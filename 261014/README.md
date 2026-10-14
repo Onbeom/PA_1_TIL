@@ -11,6 +11,8 @@ ros2 launch waffle_slam_course cartographer.launch.py
 rviz2 --ros-args -p use_sim_time:=true
 # Keyboard
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true -p frame_id:=base_footprint -p use_sim_time:=true -p speed:=0.1 -p turn:=0.2
+# /scan, /odom, /tf, /tf_static, /clock, /imu 토픽 ros2 bag 녹화
+ros2 bag record --disable-keyboard-controls -o ~/git/lv2_next_module/results/cartographer_ab/bag_$(date +%Y%m%d_%H%M) --topics /scan /odom /tf /tf_static /clock /imu
 # Map Save
 source ~/git/ros_test/waffle-lyrical-slam/install/setup.bash
 ros2 run nav2_map_server map_saver_cli -f ~/git/lv2_next_module/maps/waffle_pi_maze --ros-args -p use_sim_time:=true
