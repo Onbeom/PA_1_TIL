@@ -8,3 +8,6 @@
 *.db3
 *.pbstream
 offline_stdout.txt
+
+# 세션 인수인계 메모 (로컬 전용)
+.claude/
