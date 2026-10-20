@@ -228,3 +228,62 @@
   - 관측·행동의 순서 (학습 때와 같은 순서로 넣는지)
   - 행동 스케일 (정규화된 출력을 실제 속도·토크로 바꾸는 배율)
   - 제어 주기 (학습 때 주기와 실제 제어 주기)
+
+---
+
+# PC의 Isaac 환경 확인과 Isaac ROS 컨테이너 설치
+
+> 작업일 2026-10-19, 정리일 2026-10-20. 대상: RTX 개발 PC (Jetson은 로봇에 달려 있어 대상 아님)
+> 강의 기준은 Isaac Sim 6.2지만 이 PC는 이미 깔린 **6.1**을 그대로 사용하기로 함
+
+## 버전 확인
+| 항목 | 이 PC | 판정 |
+|---|---|---|
+| GPU / 드라이버 / CUDA | RTX 5060 Laptop (compute capability 12.0, VRAM 8GB) / 595.99.02 / 13.2 | Isaac ROS 조건(595+, CUDA 13.2+, Ampere 이상 8GB) 충족. Sim 권장 VRAM 16GB에는 못 미침 |
+| Isaac Sim | standalone `~/isaacsim` 6.1.0-rc.26, pip `~/isaacsim-venv` 6.1.0.0 | 사용 |
+| torch (venv) | 2.11.0+cu130, `sm_120` 포함 → GPU 인식 | OK |
+| ROS 2 | Lyrical | OK |
+| Isaac ROS | apt 패키지 5.0.0 12개(cuvslam 등), `isaac-ros-cli` 2.6.0 | OK |
+| Docker | 29.9.1 + nvidia-container-toolkit 1.20.1 | OK |
+| Isaac Lab | 미설치 | 나중에 설치 |
+
+```bash
+nvidia-smi --query-gpu=name,driver_version,memory.total,compute_cap --format=csv
+cat ~/isaacsim/VERSION
+~/isaacsim-venv/bin/python -m pip check        # venv 안 의존성 충돌 확인
+~/isaacsim-venv/bin/python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_arch_list())"
+dpkg -l | grep isaac-ros
+```
+
+- venv가 제대로인지는 버전 숫자만 보지 말고 `pip check`(의존성 충돌)와 torch의 GPU 인식까지 확인
+- RTX 50 계열(Blackwell)은 `sm_120` → torch 빌드의 arch 목록에 `sm_120`이 있어야 GPU 연산이 됨
+
+## Isaac Lab을 나중에 설치하는 이유
+- 강의의 고정 커밋(`release/3.0.0`)은 `pyproject.toml`에 버전을 못 박아 둠
+  - isaacsim 6.2.0.0, newton 1.6.1, warp-lang 1.17.0, mujoco ~3.12
+- 이 PC의 6.1 venv는 isaacsim 6.1.0.0, newton 1.5.0, warp-lang 1.18.0, mujoco 3.11.0 → 4개가 다름
+- 그래서 기존 venv에 Lab 3.0을 얹으면 안 됨. 설치할 때 둘 중 하나
+  - 강의대로 `uv sync --extra isaacsim` → Lab 폴더 안 `.venv`에 Sim 6.2를 따로 받음 (기존 6.1과 충돌 없음)
+  - 6.1을 지원하는 Lab 버전을 따로 찾아 기존 venv 사용
+
+## Isaac ROS 개발 컨테이너
+- 컨테이너는 결과 출력용이 아니라 Isaac ROS를 빌드·실행하는 **개발 환경 전체** (ROS 2, CUDA, TensorRT, 의존성)
+  - 이 PC는 apt로 Isaac ROS 패키지가 이미 있음 → 컨테이너는 호스트와 분리해서 공식 순서대로 실습할 때 사용
+
+```bash
+sudo isaac-ros init docker      # 모드만 docker로 설정 (sudo 필요)
+isaac-ros status                # mode: docker
+isaac-ros activate --build-only # 이미지만 받고 컨테이너는 안 띄움
+isaac-ros activate              # 컨테이너 들어가기
+```
+
+- `init`은 설정만 바꾸고, 이미지는 `activate`가 받음
+  - NVIDIA 레지스트리(`nvcr.io/nvidia/isaac/ros`)에 미리 빌드된 이미지가 있으면 받고, 없으면 Dockerfile로 빌드
+  - `--build-only`: 받기만 하고 종료
+- 받은 이미지: `nvcr.io/nvidia/isaac/ros:isaac_ros_…-amd64` (2.28GB)
+- 컨테이너 안: Ubuntu 24.04.3, ROS Lyrical, Python 3.12.3, `--gpus all`로 RTX 5060 보임
+- 이미지에 cuVSLAM 같은 기능 패키지는 **없음** → 기본 개발 이미지라 쓸 기능은 컨테이너 안에서 따로 설치 (강의 p59 흐름과 같음)
+
+## 남은 것
+- Isaac Lab 설치 방법 결정 (6.2 별도 설치 / 6.1 지원 버전)
+- Sim 6.2와 ROS 연결은 Jazzy 권장(강의 p56)인데 이 PC는 Lyrical만 → Sim과 ROS를 연결할 때 확인
