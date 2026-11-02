@@ -236,184 +236,57 @@ check_urdf $(ros2 pkg prefix waffle_4wd_description_261021)/share/waffle_4wd_des
 # CAD에서 URDF·USD 만들기 — 모델 생성과 주행 검증
 
 > 학습일 2026-10-22, 정리일 2026-11-02. 자료: CAD에서 URDF·USD 만들기 (KANT, 로컬 `ref/ROS2/`에만 보관)
-> 실습: [URDF_USD_IsaacSim62_v4](https://github.com/SeongminJaden/URDF_USD_IsaacSim62_v4), [URDF·USD → MuJoCo 코드 실습 (velog)](https://velog.io/@roboticsmaster/2026-10-22-URDFUSD-Mujoco). README 순서대로 진행 (실행 결과는 이 TIL에 기록하지 않음)
-> 위 Waffle 4WD 작업과 같은 날. 관련: [261021 USD란](../261021/ROS2.md#7-usd란)
+> 실습: [URDF_USD_IsaacSim62_v4](https://github.com/SeongminJaden/URDF_USD_IsaacSim62_v4), [URDF·USD → MuJoCo 코드 실습 (velog)](https://velog.io/@roboticsmaster/2026-10-22-URDFUSD-Mujoco). 실행 결과는 이 TIL에 기록하지 않음
 
 ## 수업 범위
-- 목표
-  - CAD 부품을 링크와 관절로 나눔
-  - **같은 파라미터**로 URDF와 USD를 만듦
-  - 파일 검사(정적)와 주행 검증의 결과를 구분
-- 제출물: 모델 2종(URDF·USD), 검사 JSON, 실패 분석 기록
-- 교안 사례: M38 CAD 기반 이동 베이스, 링크 9개·구동 관절 8개 (조향 4 + 바퀴 4), 팔은 CAD 자세로 고정
-  - 검증 범위: 평지·저속·총질량 4kg 가정. 강도·체결·배선은 별도 검증
-  - 기록된 엔진: MuJoCo 3.16.0, Isaac Sim 5.1 PhysX
+- 목표: CAD 부품을 링크·관절로 나누고, **같은 파라미터**로 URDF와 USD를 만들고, 정적 검사와 주행 검증을 구분
+- 교안 사례 M38: 링크 9·구동 관절 8(조향 4 + 바퀴 4), 팔은 CAD 자세로 고정, 평지·저속·총질량 4kg 가정
 
-| 형식·엔진 | 역할 | 이 수업의 확인 대상 |
+| 형식·엔진 | 역할 | 확인 대상 |
 |---|---|---|
-| URDF | 로봇 링크·관절 기술 | 트리, 좌표, 관성, 메시 |
-| USD | 장면과 물리 속성 기술 | RigidBody, Mass, Joint |
-| MuJoCo | 동역학 계산 | 시험용 모델의 주행 |
-| Isaac Sim / PhysX | USD 기반 동역학 계산 | 실제 USD 로봇의 주행 |
+| URDF | 링크·관절 기술 | 트리, 좌표, 관성, 메시 |
+| USD | 장면과 물리 속성 | RigidBody, Mass, Joint |
+| MuJoCo / Isaac PhysX | 동역학 계산 | 시험 모델 / 실제 USD의 주행 |
 
-## CAD 부품을 링크로 묶기
-- 서로 고정된 부품은 같은 링크로 묶음
-- 움직이는 경계에 관절을 둠
-- **모든 CAD 바디가 정확히 한 링크에 속해야 함** → 위 6장의 나사가 이 규칙을 어긴 예
-- M38 트리: `base_link` 아래 조향 4개(`lh1_steer` 등), 각 조향 아래 바퀴(`lh1_wheel` 등)
+## 모델 만들기
+- 링크 묶기: 서로 고정된 부품은 한 링크, 움직이는 경계에 관절, **모든 CAD 바디는 정확히 한 링크에** (위 6장의 나사가 어긴 예)
+- 단위·좌표: mm → m(÷1000), ROS 기준 x 앞·y 왼쪽·z 위
+  - $v_\text{local} = C \cdot v_\text{CAD,mm}/1000 - \text{origin}_m$ (예: [100, 200, 30]mm → [0.2, −0.1, 0.03]m)
+  - Waffle 4WD는 내보낸 URDF가 이미 m·REP-103이라 필요 없었음 (위 4장)
+- 관절: `origin` = 부모에서 본 관절 위치·방향, `axis` = 회전 방향. 거울 배치된 오른쪽 모듈은 축 부호 확인 (0, ±0.3rad로 돌려 봄)
+  - `fixed`는 axis·limit 없음, `continuous`는 lower·upper 없음
+  - 부모·자식은 **이름**으로 연결 → 이름 오타는 XML 문법은 통과해도 트리가 깨짐
+- 링크 = `<inertial>` + `<visual>`(보이는 메시) + `<collision>`(접촉용 단순 형상, 바퀴는 원통·부품은 박스)
+- 균질 상자 관성: $I_{xx} = \frac{m}{12}(y^2+z^2)$ 등 (예: $m=12$, [1, 2, 3] → [13, 10, 5]). CAD 관성을 이 식으로 대체하지 않음
 
-## 단위와 좌표를 먼저 통일
-- CAD mm → m: 1,000으로 나눔
-- ROS 기준(REP-103): x 앞, y 왼쪽, z 위
-- 월드 좌표로 내보낸 메시는 링크 원점을 빼서 링크 좌표로 바꿈
-
-$$
-v_\text{local} = C \cdot \frac{v_\text{CAD,mm}}{1000} - \text{origin}_m, \qquad
-C = \begin{bmatrix} 0 & 1 & 0 \\ -1 & 0 & 0 \\ 0 & 0 & 1 \end{bmatrix}
-$$
-
-- 예: [100, 200, 30]mm → $C \cdot [0.1, 0.2, 0.03]$ = [0.2, −0.1, 0.03]m (원점 0일 때)
-  - 이 $C$는 CAD의 y를 ROS의 x로, CAD의 x를 ROS의 −y로 보내는 회전 (CAD 축 방향에 따라 다름)
-- Waffle 4WD는 내보낸 URDF가 이미 m·REP-103이라 이 변환이 필요 없었음 (위 4장)
-
-## 관절 원점과 회전축
-- `origin`: 부모 링크에서 본 관절 위치·방향 (관절 값 0일 때 자식 프레임)
-- `axis`: 관절 좌표계에서 본 회전 방향 (단위벡터)
-- 거울 배치된 오른쪽 모듈은 축 부호를 꼭 확인
-- 0, +0.3, −0.3rad로 돌려 보며 바퀴 중심과 방향을 비교 → 부호 실수를 눈으로 잡음
-
-```xml
-<joint name="hinge" type="revolute">
-  <parent link="base_link"/>
-  <child link="arm_link"/>
-  <origin xyz="0 0 0.1" rpy="0 0 0"/>
-  <axis xyz="0 0 1"/>
-  <limit lower="-1.5707963" upper="1.5707963" effort="1" velocity="1"/>
-</joint>
-```
-
-- 관절 종류별 규칙 (velog)
-  - `fixed`: axis·limit 없음
-  - `revolute`, `prismatic`: lower·upper·effort·velocity 모두
-  - `continuous`: lower·upper 없음 (바퀴처럼 끝없이 도는 관절)
-- 부모·자식은 리스트 순서가 아니라 **이름**으로 연결됨 → child 이름 오타는 XML 문법은 통과해도 트리가 깨짐
-
-## 링크: 보이는 형상, 충돌 형상, 질량
-- 링크 하나에 `<inertial>`(질량·질량중심·관성), `<visual>`, `<collision>`이 들어감
-- visual: 화면에 보이는 메시와 색 / collision: 접촉 계산용 단순 형상
-  - 교안 예: 바퀴는 원통, 출력 부품은 박스로 근사. 색은 설명용 추정 재질
-- 질량 입력 (M38, 가정값)
-
-| 링크 | 개수 | 각 질량 | 합계 |
-|---|---|---|---|
-| base_link | 1 | 1.8kg | 1.8kg |
-| steer | 4 | 0.4kg | 1.6kg |
-| wheel | 4 | 0.15kg | 0.6kg |
-| 전체 | 9 | | 4.0kg |
-
-- 균질한 상자의 관성 (중심, 모서리와 나란한 축 기준)
-
-$$
-I_{xx} = \frac{m}{12}(y^2 + z^2), \quad I_{yy} = \frac{m}{12}(x^2 + z^2), \quad I_{zz} = \frac{m}{12}(x^2 + y^2)
-$$
-
-- velog 테스트 예: $m = 12$, 크기 [1, 2, 3] → [13, 10, 5] kg·m²
-- 교차항 0은 균질·중심·축 정렬일 때만 성립 → CAD에서 얻은 관성을 이 공식으로 대체하지 않음
-
-## USD 물리 모델의 구성
+## USD 물리 모델
 | 대상 | 필요한 설정 |
 |---|---|
-| Stage | `metersPerUnit=1`, `upAxis=Z`, kg 단위 1 |
+| Stage | `metersPerUnit=1`, `upAxis=Z` |
 | /Robot | defaultPrim, `ArticulationRootAPI` |
-| 각 링크 | `RigidBodyAPI`, `MassAPI` |
-| 충돌 도형 | `CollisionAPI` |
-| 관절 | `RevoluteJoint` + body0/body1 관계 |
+| 링크 / 충돌 도형 | `RigidBodyAPI`, `MassAPI` / `CollisionAPI` |
+| 관절 | `RevoluteJoint` + body0/body1 |
 | 장면 | `PhysicsScene`, 바닥은 시험에 맞게 추가 |
 
-- URDF↔USD 관절 표기 대응은 위 [2장](#2-footprint-위치의-표시는-무엇인가) 표 참고 (USD 회전 한계는 degree)
-- 로봇 자산을 USD로 바꿔도 바닥·주행 제어기가 자동으로 생기지는 않음 → 시험 장면에서 따로 추가
-
-## 실습: 같은 파라미터로 두 형식 만들기
-- 설정은 JSON(로봇마다 달라지는 데이터), 처리 절차는 Python으로 나눔
-  - 길이 m, 각도 rad, 질량 kg, 직선 관절 속도 m/s, 회전 관절 속도 rad/s
-  - `units=SI`라고 적어도 값이 자동 변환되지는 않음 → 400mm는 0.4, 90°는 1.570796을 직접 입력
-  - 질량은 측정·CAD·가정 중 출처를 적음
-- XML은 문자열을 이어 붙이지 않고 `xml.etree.ElementTree`로 만듦 (따옴표·특수문자 처리)
-- 생성기는 기존 파일을 덮어쓰지 않음 → 다시 만들 때는 새 이름
-- 값 변경과 재생성 실습
-
-| 작업 | 확인할 결과 |
-|---|---|
-| model.json의 arm 질량 0.2 → 0.3 | 두 형식의 질량이 함께 바뀜 |
-| joint.origin z 0.1 → 0.12 | URDF `origin`과 USD `localPos0`가 함께 바뀜 |
-| build 후 check | `PASS_STATIC` |
-| 원래 값으로 복원 | 기준 모델과 결과 보관 |
-
-- 단위 오류 검출: USD 상한을 90° 대신 1.5707963으로 넣은 오류 모델 → `angle unit mismatch` 검출
-  - 정상 모델이 PASS하는 것만 보지 말고, **일부러 틀린 모델이 FAIL하는지**도 봐야 검사기를 믿을 수 있음
+- URDF↔USD 관절 표기는 위 [2장](#2-footprint-위치의-표시는-무엇인가) 표 (USD 회전 한계는 degree)
+- 실습: JSON(로봇별 데이터)과 Python(절차)을 나눔. `units=SI`라고 적어도 자동 변환은 없음 → 400mm는 0.4, 90°는 1.570796으로 직접 입력
+  - 값 바꿔 재생성: 질량 0.2 → 0.3이면 두 형식이 함께, origin z 0.1 → 0.12면 URDF `origin`과 USD `localPos0`가 함께 바뀌어야 함
+  - 일부러 USD 한계를 rad로 넣은 오류 모델이 `angle unit mismatch`로 **FAIL하는지**도 봐야 검사기를 믿을 수 있음
 
 ```shell
-python3 -m venv .venv
-.venv/bin/python -m pip install -r code/requirements.txt
 .venv/bin/python code/build_robot.py examples/robot.json output/robot.urdf
 .venv/bin/python code/inspect_robot.py output/robot.urdf --out output/check
 "$HOME/isaacsim/python.sh" code/convert_urdf62.py output/robot.urdf output/slider-usd-run1 --base fixed
 ```
 
-- `--base`: 이동 로봇은 mobile(바닥에 고정 안 함), 시험대·로봇팔은 fixed
-- 일반 실습 venv와 Isaac Sim 내장 Python을 분리해서 씀
-
-## 정적 검사 통과 기준 (M38)
-| 검사 | 기준 |
-|---|---|
-| 구조 | 링크 9 / 구동 관절 8 / root `base_link` |
-| 메시·수치 | 경로 존재, NaN·Inf 없음 |
-| 물성 | 총질량 4kg, 유효한 관성 |
-| 형식 간 비교 | 질량·원점·축·연결 일치 |
-| 메시 경계 | 좌표 차이 < 2×10⁻⁷m |
-| 독립 FK | 0, +0.3, −0.3rad 확인 |
-
-- 독립 FK: URDF·USD 파일을 읽는 코드와 별개로 순기구학을 직접 계산해 같은 자세가 나오는지 확인
-- `PASS_STATIC`(정적)은 파일과 모델이 일관된다는 뜻일 뿐 **주행 성공이 아님**
-  - 같은 이유로 MuJoCo의 `PASS_LOAD_STEP_ONLY`(중력 0·명령 없이 불러와 몇 스텝 돌려 봄)도 로딩·수치 검사일 뿐
-
-## 주행 검증
-- MuJoCo: 마찰계수 0.3 / 0.6 / 0.9 × 전진·횡이동·대각선·제자리 회전 = 12개 조건, dt 0.002s, 시험마다 10s → 교안 기록상 모두 PASS
-- Isaac Sim(PhysX): 실제 USD로 시험
-  - `SimulationApp`을 먼저 초기화한 뒤 다른 모듈 import
-  - USD를 참조해 articulation 구성, DOF **이름**으로 관절 순서를 매핑 (번호를 가정하지 않음)
-  - 원래 drive gain을 0으로 하고 effort(토크)로 직접 제어
-  - 시험마다 상태·속도·적분값 초기화
-
-| 항목 | 합격 기준 |
-|---|---|
-| 위치 / yaw 오차 | < 0.05m / < 5° |
-| 기울기 / 정지 속도 | < 10° / < 0.02m/s |
-| 조향 / 바퀴 각속도 | ≤ 1.001 / ≤ 10.001rad/s |
-| 최종 토크 | ≤ 1.000001N·m |
-| 수치 상태 | 유한값, 수치 불안정 없음 |
-
-### 도착했어도 FAIL일 수 있음 (교안 기록)
-| 시험 | 위치 오차 | 최대 조향 속도 | 결과 |
-|---|---|---|---|
-| 전진 | 2.662mm | 0.9314rad/s | PASS |
-| 횡이동 | 3.182mm | 0.9016rad/s | PASS |
-| 대각선 | 4.349mm | **1.0142rad/s** | FAIL |
-| 회전 | 0.422mm | 0.9846rad/s | PASS |
-
-- 대각선은 목표에 4mm 안으로 도착했지만 조향 속도가 한계(1.001)를 넘어서 FAIL
-  - 판정은 "도착했는가"만이 아니라 **과정에서 제한을 지켰는가**까지
-- 다음 실험: 조향 목표의 변화율을 줄이고 재시험
-
-### 매 물리 스텝 기록 (velog)
-- 렌더링 간격으로만 저장하면 중간의 최고 속도를 놓침 → 매 물리 스텝 직후 기록
-- CSV 헤더: `step, time_s, joint, q_SI, dq_SI_per_s` (시간은 벽시계가 아니라 시뮬레이션 시간)
-- 스텝 누락이나 NaN·Inf가 있으면 예외 → 실패 또는 중단으로 기록
-- 속도 판정 함수의 경계 사례
-  - [0, −0.5, 1.0], 제한 1.0 → 통과 (경계값 포함)
-  - [−1.01] → 실패, 빈 목록 → 실패, NaN·Inf → 실패
-  - Python의 `all([])`은 True라서 데이터가 있는지 따로 확인해야 함
-- 결과를 맞추려고 시험 후 제한값을 바꾸지 않음
+## 정적 검사와 주행 검사
+- 정적 검사 기준: 구조(링크·관절 수, root), 메시 경로·NaN·Inf, 총질량·관성, 형식 간 질량·원점·축·연결 일치, 독립 FK(0, ±0.3rad)
+- `PASS_STATIC`은 파일 일관성일 뿐 **주행 성공이 아님**
+- 주행: MuJoCo 마찰 0.3/0.6/0.9 × 전진·횡이동·대각선·회전 12조건, Isaac에서는 DOF **이름**으로 관절 매핑, drive gain 0 + effort 제어
+- Isaac 합격 기준(교안): 위치 < 0.05m, yaw < 5°, 조향 각속도 ≤ 1.001rad/s, 최종 토크 ≤ 1.000001N·m, 수치 유한
+- 도착해도 FAIL (교안 기록): 대각선은 위치 오차 4.349mm로 도착했지만 최대 조향 속도 1.0142rad/s로 한계 초과 → 다음 실험은 조향 목표 변화율을 줄이고 재시험
+  - 판정은 도착 여부와 **과정 중 제한 준수**를 따로 봄
+- 매 물리 스텝 기록: 렌더 간격으로만 저장하면 순간 최고 속도를 놓침. 빈 목록·NaN은 실패 (Python `all([])`은 True라 데이터 존재를 따로 확인)
 
 ## 오류를 좁히는 순서
 | 증상 | 먼저 확인할 것 |
@@ -421,12 +294,4 @@ python3 -m venv .venv
 | 크기가 1,000배 차이 | mm→m, mesh scale, stage 단위 |
 | 회전 방향이 반대 | joint axis, 좌우 모듈 부호 |
 | 관절이 다른 부위를 움직임 | body0/1, DOF 이름 매핑 |
-| 힘 제한 초과 | 감쇠 추가 후 최종 토크 clip |
-| 기록은 정상인데 순간 초과 발생 | 다운샘플 전 모든 스텝의 최대값 |
-| ModuleNotFoundError | 실행한 Python·venv·Isaac 환경 |
-| 링크가 떨어져 보임 | joint origin, 메시 origin, 단위 |
-
-## 정리
-- 형상·좌표·물성을 같은 기준(하나의 설정)으로 두 형식에 넣음
-- 정적 검사: 파일과 모델의 일관성 / 주행 검사: 조건별 수치와 제한
-- 정적 PASS → 주행 PASS 순서로 넘어가고, 주행은 도착 여부와 제한 준수를 따로 봄
+| 기록은 정상인데 순간 초과 | 다운샘플 전 모든 스텝의 최대값 |
